@@ -11,6 +11,20 @@
 - [`bedrock_postgres_chain.py`](bedrock_postgres_chain.py) - A subclass of
   `QueryChain` specific to `BedrockChat` and `PGVector`.
 
+## Guiding Principles
+
+- Create a working skeleton of the conversational retrieval
+  chain where the basic functions are maintained in one class
+  that can be used in many contexts.
+- The inputs of the base `QueryChain` class are the large
+  language model (LLM), retriever, and system prompt at
+  creation time, and then the new question/query and the
+  the chat message history at query time.
+- There is a `BedrockPostgresChain` subclass that is specialized
+  to `BedrockChat` and a `PGVector`-based retriever.
+- Streaming is enabled by using an LLM is streaming mode and
+  by providing one or more instances of `BaseCallbackHandler`.
+
 ## Design/Implementation Questions
 
 - Should the prompt be provided as a `str` or as a `PromptTemplate`?

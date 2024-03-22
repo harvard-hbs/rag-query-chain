@@ -36,11 +36,12 @@ def create_session():
 
 def process_query():
     chat_query = st.session_state["chat_query"]
-    logger.info(f"Processing query: '{chat_query}'")
+    session_id = st.session_state["session_id"]
+    logger.info(f"Processing query ({session_id}): '{chat_query}'")
     chat_history = st.session_state["chat_history"]
     query_chain = st.session_state["query_chain"]
     response = query_chain.ask_question(chat_query, chat_history)
-    logger.info(f"Query response: {response['answer']}")
+    logger.info(f"Query response ({session_id}): {response['answer']}")
 
 if "session_id" not in st.session_state:
     st.session_state["session_id"] = create_session()
