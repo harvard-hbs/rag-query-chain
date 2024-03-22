@@ -1,5 +1,16 @@
 # RAG Query Chain
 
+## Files
+
+- [`query_chain.py`](query_chain.py) - The basic RAG conversational retrieval chain.
+- [`query_chain_test.py`](query_chain_test.py) - A test script that instantiates
+  a `QueryChain` using `BedrockChat` and `PGVector` and makes a query, with and
+  without streaming.
+- [`query_chain_ui.py`](query_chain_ui.py) - A streamlit UI for simple chatbot
+  interaction with a query chain.
+- [`bedrock_postgres_chain.py`](bedrock_postgres_chain.py) - A subclass of
+  `QueryChain` specific to `BedrockChat` and `PGVector`.
+
 ## Design/Implementation Questions
 
 - Should the prompt be provided as a `str` or as a `PromptTemplate`?
