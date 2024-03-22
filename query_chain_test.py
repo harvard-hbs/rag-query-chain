@@ -23,7 +23,7 @@ def main():
     response = query_chain.ask_question("Is language a social construct?")
     print(response["answer"])
 
-    print("With stream...")
+    print("With streaming...")
     query_chain = BedrockPostgresChain(
         model_id=LLM_MODEL_ID,
         collection_name=COLLECTION_NAME,
