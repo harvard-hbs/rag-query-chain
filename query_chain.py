@@ -11,6 +11,7 @@ class QueryChain:
             model: BaseLanguageModel,
             retriever: BaseRetriever,
             prompt_template: str = None,
+            condense_question_llm: BaseLanguageModel = None,
             response_if_no_docs_found: str = None,
             callbacks=None,
     ):
@@ -24,6 +25,7 @@ class QueryChain:
         else:
             self.combine_docs_chain_kwargs = None
         self.retriever = retriever
+        self.condense_question_llm = condense_question_llm
         self.response_if_no_docs_found = response_if_no_docs_found
         self.callbacks = callbacks
 
@@ -47,11 +49,12 @@ class QueryChain:
             retriever=self.retriever,
             return_source_documents=True,
             verbose=False,
+            condense_question_llm=self.condense_question_llm,
             response_if_no_docs_found=self.response_if_no_docs_found,
             combine_docs_chain_kwargs=self.combine_docs_chain_kwargs,
         )
         response = query_chain.invoke(
             {"question": question},
-            config={"callbacks": self.callbacks},
+            {"metadata": metadata},
         )
         return response

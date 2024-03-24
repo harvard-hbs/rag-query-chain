@@ -35,6 +35,7 @@ def main():
         collection_name=COLLECTION_NAME,
         connection_string=CONNECTION_STRING,
         search_kwargs={"k": MAX_RETRIEVAL_COUNT},
+        streaming=True,
         callbacks=[StreamingStdOutCallbackHandler()],
     )
     chat_history = ChatMessageHistory()

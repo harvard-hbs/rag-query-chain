@@ -1,11 +1,14 @@
 import os
 import uuid
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import streamlit as st
 from streamlit.logger import get_logger
+
 from dotenv import load_dotenv
 from bedrock_postgres_chain import BedrockPostgresChain
 from langchain.memory import ChatMessageHistory
+from langchain.callbacks.base import BaseCallbackHandler
 
 logger = get_logger(__name__)
 load_dotenv()
@@ -14,6 +17,23 @@ MAX_RETRIEVAL_COUNT=10
 COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 CONNECTION_STRING = os.getenv("CONNECTION_STRING")
 LLM_MODEL_ID = os.getenv("LLM_MODEL_ID")
+
+class StreamingHandler(BaseCallbackHandler):
+    def __init__(self, container):
+        logger.info("Creating StreamingHandler")
+        self.container = container
+        self.text = st.empty()
+        self.answer = ""
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        self.answer += token
+        with self.container:
+            self.text.write(self.answer)
+    def on_chain_start(
+        self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
+    ) -> None:
+        logger.info("Retrieval chain starting")
+    def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> None:
+        logger.info("Retrieval chain ending")
 
 def new_chat_history():
     logger.info("Creating new chat history")
@@ -30,17 +50,32 @@ def create_session():
         collection_name = COLLECTION_NAME,
         connection_string = CONNECTION_STRING,
         search_kwargs = {"k": MAX_RETRIEVAL_COUNT},
+        streaming = True,
     )
     logger.info(f"Done with session creation: {session_id}")
     return session_id
 
-def process_query():
+def query_callback():
     chat_query = st.session_state["chat_query"]
     session_id = st.session_state["session_id"]
-    logger.info(f"Processing query ({session_id}): '{chat_query}'")
     chat_history = st.session_state["chat_history"]
     query_chain = st.session_state["query_chain"]
-    response = query_chain.ask_question(chat_query, chat_history)
+    process_query(
+        chat_query,
+        session_id,
+        chat_history,
+        query_chain
+    )
+
+def process_query(
+        chat_query,
+        session_id,
+        chat_history,
+        query_chain,
+):
+    logger.info(f"Processing query ({session_id}): '{chat_query}'")
+    handlers = [StreamingHandler(st.chat_message("ai"))]
+    response = query_chain.ask_question(chat_query, chat_history, handlers)
     logger.info(f"Query response ({session_id}): {response['answer']}")
 
 if "session_id" not in st.session_state:
@@ -57,4 +92,4 @@ for msg in st.session_state["chat_history"].messages:
     with st.chat_message(msg.type):
         st.write(msg.content)
     
-st.chat_input("Your message", key="chat_query", on_submit=process_query)
+st.chat_input("Your message", key="chat_query", on_submit=query_callback)
