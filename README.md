@@ -12,12 +12,16 @@ query that will be used to answer the question.
 - A vector database (e.g., Postgres PGVector)
 - LangChain objects for vector database and retriever (e.g., `PGVector.as_retriever()`)
 
-Some of the settings that can be used to affect retrieval are (some of these are
-specific to `PGVector`):
+Some of the settings that can be used to affect retrieval are:
 
 - The maximum number of documents to return (`k`)
-- A filter condition on document metadata (`filter`)
-- A similarity score threshold (`search_type` and `score_threshold`)
+- A filter condition on document metadata which is specific to your
+  documents' metadata and to the filter language for your vector
+  database (`filter`)
+- A similarity score threshold. This is available in the retrievers
+  created from the `PGvector` vector database and only returns
+  documents that score above a specified relevance threshold
+  (`search_type` and `score_threshold`)
 
 Here as an example of creating a retriever with a maximum number
 of returned documents of 10, a filter to only return PDF documents
@@ -25,6 +29,14 @@ of returned documents of 10, a filter to only return PDF documents
 score threshold of 0.5.
 
 ```
+embeddings = BedrockEmbeddings(
+    model_id="amazon.titan-embed-text-v1",
+)
+db = PGVector(
+    embedding_function=embeddings,
+    collection_name=<collection_name>,
+    connection_string=<connection_string>,
+)
 retriever = db.as_retriever(
     search_type = "similarity_score_threshold",
     search_kwargs = {
@@ -37,7 +49,28 @@ retriever = db.as_retriever(
 
 ### Memory
 
+The memory in a conversational retrieval chain keeps track of the back
+and forth interactions between the user and the chain to be used
+provide context, often in the form a rephrasing a later question
+in the conversation chain to be context-free using the earlier
+question/answer pairs, although this can be done in other ways
+and the question/answer memory can be used for other purposes as well.
 
+The conversational retrieval chain can remain in memory for the
+duration of the conversation then the LangChain object
+`ConversationBufferWindowMemory` can be used to automatically maintain
+the history. The `k` parameter determines how many interactions to
+keep.
+
+If the retrieval chain needs to be stateless and/or the chat history
+needs to be handled externally, the chain can use the
+`ConversationBufferMemory` with the pre-query history being provided
+as a `ChatMessageHistory` object or a subclass. Note that the a
+conversational retrieval chain using `ConversationBufferMemory` expects
+the associated `ChatMessageHistory` to be empty when the chain is
+invoked (i.e. it should not contain the query) and the chain will
+populate the message history with both the query and the answer
+before returning.
 
 ### Conversational Context
 ### Response Generation
