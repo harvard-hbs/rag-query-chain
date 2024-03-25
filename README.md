@@ -73,7 +73,23 @@ populate the message history with both the query and the answer
 before returning.
 
 ### Conversational Context
+
+By default the conversational retrieval chain uses context-free
+question reformulation to achieve a conversational style. The 
+reformulation is done by a call to the provided model to
+produce a question where ambiguities are resolved from the
+chat message history.
+
+If you are using streaming to provide real-time updates on the
+response to the user it is a good idea to provide a separate,
+non-streaming model to the retrieval chain for the question
+reformulation using the `condense_question_llm` parameter. Otherwise,
+the user will see the reformulated question streamed before
+the response from the primary response generation.
+
 ### Response Generation
+
+
 
 ## Files
 
