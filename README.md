@@ -140,6 +140,36 @@ and `score_threshold` as mentioned in the Retrieval section and
 then provide a `response_if_no_docs` string as a parameter to
 the `ConversationalRetrievalChain` constructor.
 
+## Streaming
+
+Enabling response streaming for the conversation retrieval chain is
+done by passing `streaming=True` and providing an instance of a
+streaming callback handler in the `callbacks` parameter to the primary
+LLM used for answer generation. It is also necessary to create a
+secondary LLM without streaming for the question reformulation part of
+the retrieval chain using the `condense_question_llm`
+parameter. Otherwise, the reformulated question will be streamed to
+the user before the final response.
+
+```
+model = BedrockChat(
+    model_id="anthropic.claude-3-sonnet-20240229-v1:0",
+    streaming=True,
+    callbacks=[MyStreamingHandler{}],
+)
+question_llm = Bedrock(
+    model_id="anthropic.claude-instant-v1",
+    streaming=False,
+)
+query_chain = ConversationalRetrievalChain.from_llm(
+    llm=model,
+    memory=memory,
+    retriever=retriever,
+    return_source_documents=True,
+    condense_question_llm=question_llm,
+)
+```
+
 ## Files
 
 - [`query_chain.py`](query_chain.py) - The basic RAG conversational retrieval chain.
