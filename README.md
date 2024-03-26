@@ -89,7 +89,50 @@ the response from the primary response generation.
 
 ### Response Generation
 
+The conversational retrieval chain produces the final response for the
+user by filling the prompt template with `{context}` coming from the
+a call to `get_relevant_documents` on the retriever and the `{question}`
+that is either the original question, or a reformulation from the 
+conversational history.
 
+A custom prompt can be provided that uses the appropriate 
+placeholders for `{context}` and `{question}`:
+
+```
+PROMPT_TEMPLATE = """Provide a helpful answer to the
+QUESTION using the provided CONTEXT. If you can't find
+the answer in the CONTEXT say that you don't know.
+
+<CONTEXT>
+{context}
+</CONTEXT>
+
+<QUESTION>
+{question}
+</QUESTION>
+
+Helpful Answer:
+"""
+
+qa_prompt = PromptTemplate(
+    template=PROMPT_TEMPLATE,
+    input_variables=["context", "question"],
+)
+query_chain = ConversationalRetrievalChain.from_llm(
+    llm=model,
+    memory=memory,
+    retriever=retriever,
+    return_source_documents=True,
+    combine_docs_chain_kwargs={"prompt": qa_prompt},
+)
+```
+
+We've seen that large language models can give unsatisfactory answers
+from retrieved context that it is only tangentially related to the
+query. A nice option is to `search_type="similarity_score_threshold"`
+and `score_threshold` as mentioned in the Retrieval section and
+then provide a `response_if_no_docs` string as a parameter to
+the `ConversationalRetrievalChain` constructor.
 
 ## Files
 
