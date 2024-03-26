@@ -1,10 +1,11 @@
 # RAG Query Chain
 
 The conversational retrieval chain demonstrated in this repository is
-an example of software implementing a conversational experience with a
-a set of documents indexed for embedding-based retrieval. It also
-describes the individual components of the chain, their function, and
-opportunities for customization.
+an example of software implementing a Generative AI conversational
+experience with a a set of documents indexed for embedding-based
+retrieval. It also describes the individual components of the chain,
+their function, opportunities for customization, and workarounds for
+issues we have encountered.
 
 ## Conversational Retrieval Chain Components
 
@@ -214,3 +215,13 @@ query_chain = ConversationalRetrievalChain.from_llm(
     to be provided or created from scratch. It is worth looking into
     whether the retrieval chain interfaces have an affordance for passing
     in memory, in which case it might make sense to switch.
+
+## To Do
+
+- [ ] Add labeled diagram of flow
+- [ ] Add similarity threshold and no-doc-found message to code
+- [ ] Add `requirements.txt`
+- [ ] Add installation instructions
+- [ ] Fix streaming in streamlit UI
+
+
