@@ -152,10 +152,15 @@ parameter. Otherwise, the reformulated question will be streamed to
 the user before the final response.
 
 ```
+class MyStreamingHandler(BaseCallbackHandler):
+    def on_llm_new_token(self, token: str):
+        sys.stdout.write(token)
+        sys.stdout.flush()
+
 model = BedrockChat(
     model_id="anthropic.claude-3-sonnet-20240229-v1:0",
     streaming=True,
-    callbacks=[MyStreamingHandler{}],
+    callbacks=[MyStreamingHandler()],
 )
 question_llm = Bedrock(
     model_id="anthropic.claude-instant-v1",
