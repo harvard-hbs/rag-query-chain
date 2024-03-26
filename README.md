@@ -7,6 +7,10 @@ retrieval. It also describes the individual components of the chain,
 their function, opportunities for customization, and workarounds for
 issues we have encountered.
 
+<img src="conversational_retrieval_chain.png"
+     alt="Conversational Retrieval Chain diagram"
+     width="500"/>
+
 ## Conversational Retrieval Chain Components
 
 ### Retrieval
