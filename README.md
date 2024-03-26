@@ -2,8 +2,8 @@
 
 The conversational retrieval chain demonstrated in this repository is
 an example of software implementing a conversational experience with a
-a set of documents indexed for embedding-based retrieval along with a
-desccription of the individual components, their function, and
+a set of documents indexed for embedding-based retrieval. It also
+describes the individual components of the chain, their function, and
 opportunities for customization.
 
 ## Conversational Retrieval Chain Components
