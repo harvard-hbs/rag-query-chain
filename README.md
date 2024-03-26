@@ -9,7 +9,7 @@ issues we have encountered.
 
 <img src="conversational_retrieval_chain.png"
      alt="Conversational Retrieval Chain diagram"
-     width="700"/>
+     width="900"/>
 
 ## Conversational Retrieval Chain Components
 
