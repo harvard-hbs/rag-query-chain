@@ -223,7 +223,7 @@ query_chain = ConversationalRetrievalChain.from_llm(
 
 ## To Do
 
-- [ ] Add labeled diagram of flow
+- [x] Add labeled diagram of flow
 - [ ] Add similarity threshold and no-doc-found message to code
 - [ ] Add `requirements.txt`
 - [ ] Add installation instructions
