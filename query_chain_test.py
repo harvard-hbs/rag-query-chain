@@ -70,21 +70,21 @@ class CallbackTester(BaseCallbackHandler):
         print(f"Text {text}...")
 
 def main():
-    # print("Without streaming...")
-    # query_chain = BedrockPostgresChain(
-    #     model_id=LLM_MODEL_ID,
-    #     collection_name=COLLECTION_NAME,
-    #     connection_string=CONNECTION_STRING,
-    #     search_kwargs={"k": MAX_RETRIEVAL_COUNT},
-    # )
-    # chat_history = ChatMessageHistory()
-    # query = "Is language a social construct?"
-    # response = query_chain.ask_question(query, chat_history)
-    # print(chat_history)
-    # query = "What parts are not social?",
-    # response = query_chain.ask_question(query, chat_history)
-    # print(chat_history)
-    # print()
+    print("Without streaming...")
+    query_chain = BedrockPostgresChain(
+        model_id=LLM_MODEL_ID,
+        collection_name=COLLECTION_NAME,
+        connection_string=CONNECTION_STRING,
+        search_kwargs={"k": MAX_RETRIEVAL_COUNT},
+    )
+    chat_history = ChatMessageHistory()
+    query = "Is language a social construct?"
+    response = query_chain.ask_question(query, chat_history)
+    print(chat_history)
+    query = "What parts are not social?",
+    response = query_chain.ask_question(query, chat_history)
+    print(chat_history)
+    print()
 
     print("With streaming...")
     query_chain = BedrockPostgresChain(

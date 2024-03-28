@@ -17,6 +17,7 @@ class BedrockPostgresChain(QueryChain):
             connection_string: str,
             search_kwargs = {},
             prompt_template: str = None,
+            search_type: str = "similarity",
             response_if_no_docs_found: str = None,
             streaming=False,
             callbacks=None,
@@ -30,7 +31,8 @@ class BedrockPostgresChain(QueryChain):
             connection_string=connection_string,
         )
         retriever = db.as_retriever(
-            search_kwargs=search_kwargs,
+            search_type = search_type,
+            search_kwargs = search_kwargs,
         )
         model = BedrockChat(
             model_id=model_id,
@@ -47,6 +49,5 @@ class BedrockPostgresChain(QueryChain):
             prompt_template=prompt_template,
             condense_question_llm=question_llm,
             response_if_no_docs_found=response_if_no_docs_found,
-            # callbacks=callbacks,
         )
 
