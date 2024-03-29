@@ -21,70 +21,29 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 CONNECTION_STRING = os.getenv("CONNECTION_STRING")
 LLM_MODEL_ID = os.getenv("LLM_MODEL_ID")
 
-class CallbackTester(BaseCallbackHandler):
-    def on_llm_start(
-        self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
-    ) -> Any:
-        """Run when LLM starts running."""
-        print("LLM start...")
-
-    def on_chat_model_start(
-        self, serialized: Dict[str, Any], messages: List[List[BaseMessage]], **kwargs: Any
-    ) -> Any:
-        """Run when Chat Model starts running."""
-        print("Chat Model start...")
-
-    def on_llm_new_token(self, token: str, **kwargs: Any) -> Any:
-        """Run on new LLM token. Only available when streaming is enabled."""
-        sys.stdout.write(token)
-        sys.stdout.flush()
-
-    def on_llm_end(self, response: LLMResult, **kwargs: Any) -> Any:
-        """Run when LLM ends running."""
-        print("LLM end...")
-
-    def on_llm_error(
-        self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any
-    ) -> Any:
-        """Run when LLM errors."""
-        pass
-
-    def on_chain_start(
-        self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
-    ) -> Any:
-        """Run when chain starts running."""
-        print("Chain start....")
-
-    def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> Any:
-        """Run when chain ends running."""
-        print("Chain end...")
-
-    def on_chain_error(
-        self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any
-    ) -> Any:
-        """Run when chain errors."""
-        pass
-
-    def on_text(self, text: str, **kwargs: Any) -> Any:
-        """Run on arbitrary text."""
-        print(f"Text {text}...")
-
+def print_source_documents(response):
+    for sd in response["source_documents"]:
+        md = sd.metadata
+        print(f"    {md['chapter_id']} - {md['text'][:60]}")
+    
 def main():
     print("Without streaming...")
     query_chain = BedrockPostgresChain(
-        model_id=LLM_MODEL_ID,
-        collection_name=COLLECTION_NAME,
-        connection_string=CONNECTION_STRING,
-        search_kwargs={"k": MAX_RETRIEVAL_COUNT},
+        model_id = LLM_MODEL_ID,
+        collection_name = COLLECTION_NAME,
+        connection_string = CONNECTION_STRING,
+        search_type = "similarity_score_threshold",
+        search_kwargs = {
+            "k": MAX_RETRIEVAL_COUNT,
+            "score_threshold": 0.5,
+        },
     )
     chat_history = ChatMessageHistory()
     query = "Is language a social construct?"
+    print(f"Question: {query}")
     response = query_chain.ask_question(query, chat_history)
-    print(chat_history)
-    query = "What parts are not social?",
-    response = query_chain.ask_question(query, chat_history)
-    print(chat_history)
-    print()
+    print(f"Answer: {response['answer'][:60]}")
+    print_source_documents(response)
 
     print("With streaming...")
     query_chain = BedrockPostgresChain(
@@ -93,18 +52,21 @@ def main():
         connection_string=CONNECTION_STRING,
         search_kwargs={"k": MAX_RETRIEVAL_COUNT},
         streaming=True,
-        # callbacks=[StreamingStdOutCallbackHandler()],
-        callbacks=[CallbackTester()],
+        callbacks=[StreamingStdOutCallbackHandler()],
     )
-    chat_history = ChatMessageHistory()
-    query = "Is language a social construct?"
-    print(query)
+
+    query = "What parts are not social?",
+    print(f"Question: {query}")
     response = query_chain.ask_question(query, chat_history)
     print("\n")
-    query = "What parts are not social?"
-    print(query)
+    print_source_documents(response)
+
+    query = "Who won the world series in 2023?"
+    print(f"Question: {query}")
     response = query_chain.ask_question(query, chat_history)
-    print()
+    print("\n")
+    print_source_documents(response)
+    
     print("Done.")
     
         
