@@ -1,0 +1,9 @@
+langchain
+langchain-community
+langchain-aws
+langchain-postgres
+python-dotenv
+psycopg[binary]
+streamlit
+watchdog
+

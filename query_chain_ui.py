@@ -1,94 +1,129 @@
 import os
-import uuid
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
+import json
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.messages import AIMessage
 import streamlit as st
-from streamlit.logger import get_logger
+
+from query_chain import conversational_retrieval_chain
 
 from dotenv import load_dotenv
-from bedrock_postgres_chain import BedrockPostgresChain
-from langchain.memory import ChatMessageHistory
-from langchain.callbacks.base import BaseCallbackHandler
-
-logger = get_logger(__name__)
 load_dotenv()
 
-MAX_RETRIEVAL_COUNT=10
-COLLECTION_NAME = os.getenv("COLLECTION_NAME")
-CONNECTION_STRING = os.getenv("CONNECTION_STRING")
-LLM_MODEL_ID = os.getenv("LLM_MODEL_ID")
 
-class StreamingHandler(BaseCallbackHandler):
-    def __init__(self):
-        logger.info("StreamingHandler __init__")
-        
-    def on_chat_model_start(
-            self, serialized, messages, **kwargs
-    ) -> Any:
-        """Run when Chat Model starts running."""
-        logger.info("Chat Model start")
-        self.text = st.empty()
-        self.answer = ""
-    
-    def on_llm_new_token(self, token: str, **kwargs) -> None:
-        self.answer += token
-        self.text.write(self.answer)
+def create_chat_history():
+    history = InMemoryChatMessageHistory()
+    history.add_ai_message("How can I help you?")
+    return history
 
-def new_chat_history():
-    logger.info("Creating new chat history")
-    chat_history = ChatMessageHistory()
-    chat_history.add_ai_message("How can I help you?")
-    return chat_history
-
-def create_session():
-    session_id = str(uuid.uuid4())
-    logger.info(f"Creating new session: {session_id}")
-    st.session_state["chat_history"] = new_chat_history()
-    logger.info(f"Done with session creation: {session_id}")
-    return session_id
-
-def query_callback():
-    chat_query = st.session_state["chat_query"]
-    session_id = st.session_state["session_id"]
-    chat_history = st.session_state["chat_history"]
-    process_query(
-        chat_query,
-        session_id,
-        chat_history,
+def initialize_query_chain():
+    max_num_docs = st.session_state["max_num_docs"]
+    score_threshold = st.session_state["similarity_cutoff"]
+    chain = conversational_retrieval_chain(
+        collection_name=os.getenv("COLLECTION_NAME"),
+        connection_string=os.getenv("CONNECTION_STRING"),
+    ).with_config(
+        configurable={
+            "search_kwargs": {
+                "k": max_num_docs,
+                "score_threshold": score_threshold,
+            }
+        }
     )
+    st.session_state["query_chain"] = chain
 
-def process_query(
-        chat_query,
-        session_id,
-        chat_history,
-):
-    logger.info(f"Processing query ({session_id}): '{chat_query}'")
-    with st.chat_message("human"):
-        st.write(chat_query)
-    with st.chat_message("ai"):
-        query_chain = BedrockPostgresChain(
-            model_id = LLM_MODEL_ID,
-            collection_name = COLLECTION_NAME,
-            connection_string = CONNECTION_STRING,
-            search_kwargs = {"k": MAX_RETRIEVAL_COUNT},
-            streaming = True,
-            callbacks=[StreamingHandler()],
-    )
-    response = query_chain.ask_question(chat_query, chat_history)
-    logger.info(f"Query response ({session_id}): {response['answer']}")
-
-if "session_id" not in st.session_state:
-    st.session_state["session_id"] = create_session()
-
-st.title("Document Chatbot")
-
-st.write(
-    """This conversational interface allows you to interact with
-indexed content."""
+st.sidebar.number_input(
+    label="Maximum number of documents",
+    min_value=1,
+    max_value=30,
+    value=10,
+    key="max_num_docs",
+    on_change=initialize_query_chain,
 )
 
-for msg in st.session_state["chat_history"].messages:
-    with st.chat_message(msg.type):
-        st.write(msg.content)
+st.sidebar.slider(
+    label="Similarity cutoff",
+    min_value=0.0,
+    max_value=1.0,
+    value=0.25,
+    key="similarity_cutoff",
+    on_change=initialize_query_chain,
+)
+
+def stream_response(response_generator):
+    for resp_part in response_generator:
+        if "answer" in resp_part:
+            yield resp_part["answer"]
+        elif "context" in resp_part:
+            st.session_state["context"] = resp_part["context"]
+        else:
+            print("Warning: unknown response type: {resp_part}")
+
+def stream_model_query(question):
+    # Reset session context state in case message has no context
+    if "context" in st.session_state:
+        del st.session_state["context"]
+    query_chain = st.session_state["query_chain"]
+    query_params = {"question": question}
+    chat_history = st.session_state["chat_history"]
+    if len(chat_history.messages) > 1:
+        # Don't pass history if first question
+        query_params["chat_history"] = str(chat_history)
+    response_generator = stream_response(
+        query_chain.stream(query_params)
+    )
+    return response_generator
+
+def metadata_display(md):
+    # Don't include "text" field if it exists in the metadata
+    md_no_key = {key: md[key] for key in md if key != "text"}
+    md_str = json.dumps(md_no_key, indent=4)
+    return md_str
+
+def write_context(documents):
+    metadata_list = "\n".join(
+        [f"""1. ```{metadata_display(doc.metadata)}``` """ for doc in documents]
+    )
+    st.markdown(f"### References ({len(documents)})")
+    st.markdown(metadata_list)
+
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = create_chat_history()
+
+if "query_chain" not in st.session_state:
+    initialize_query_chain()
     
-st.chat_input("Your message", key="chat_query", on_submit=query_callback)
+st.markdown("## Chatbot")
+
+for message in st.session_state["chat_history"].messages:
+    with st.chat_message(message.type):
+        st.markdown(message.content)
+        if message.response_metadata:
+            context = message.response_metadata["context"]
+            write_context(context)
+        
+if question := st.chat_input("Your message"):
+    with st.chat_message("user"):
+        st.markdown(question)
+
+    with st.chat_message("ai"):
+        # Stream `answer` part of response and save `context`.
+        response = st.write_stream(stream_model_query(question))
+        # Write a representation of `context` if present
+        if "context" in st.session_state:
+            write_context(st.session_state["context"])
+
+    chat_history = st.session_state["chat_history"]
+    chat_history.add_user_message(question)
+    if "context" in st.session_state:
+        # If there are context documents, save them as part of
+        # the message so they can be shown in the history.
+        context = st.session_state["context"]
+        ai_message = AIMessage(
+            response,
+            response_metadata={"context": context}
+        )
+        chat_history.add_message(ai_message)
+    else:
+        chat_history.add_ai_message(response)
+    
