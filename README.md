@@ -224,9 +224,8 @@ query_chain = ConversationalRetrievalChain.from_llm(
 ## To Do
 
 - [x] Add labeled diagram of flow
-- [ ] Add similarity threshold and no-doc-found message to code
-- [ ] Add `requirements.txt`
+- [x] Add `requirements.txt`
 - [ ] Add installation instructions
-- [ ] Fix streaming in streamlit UI
-
-
+- [x] Fix streaming in streamlit UI
+- [ ] Modify README.md to match new LCEL code
+- [ ] Add basic embedding generation
