@@ -1,5 +1,9 @@
 from operator import itemgetter
-from langchain.prompts import PromptTemplate
+from langchain.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    PromptTemplate,
+)
 from langchain_core.runnables import (
     ConfigurableField,
     RunnableBranch,
@@ -7,6 +11,7 @@ from langchain_core.runnables import (
     RunnableParallel,
     RunnablePassthrough,
 )
+from langchain_core.output_parsers import StrOutputParser
 from langchain_aws import BedrockEmbeddings
 from langchain_aws import ChatBedrock
 from langchain_aws import BedrockLLM
@@ -44,7 +49,15 @@ def conversational_retrieval_chain(
             "Follow Up Input: {question}\nStandalone question:"
         ),
     )
-    reformulate_chain = condense_question_prompt | question_llm
+    
+    chat_history_stringifier = ChatPromptTemplate.from_messages(
+        [MessagesPlaceholder("chat_history")]
+    ) | RunnableLambda(lambda x: x.to_string())
+    
+    reformulate_chain = RunnableParallel({
+        "question": itemgetter("question"),
+        "chat_history": chat_history_stringifier,
+        }) | condense_question_prompt | question_llm
 
     # Branch to reformulate question if there is non-empty chat history
     maybe_reformulate_with_history: RetrieverOutputLike = RunnableBranch(

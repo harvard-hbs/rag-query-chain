@@ -68,24 +68,22 @@ def stream_model_query(question):
     chat_history = st.session_state["chat_history"]
     if len(chat_history.messages) > 1:
         # Don't pass history if first question
-        query_params["chat_history"] = str(chat_history)
+        query_params["chat_history"] = chat_history.messages
     response_generator = stream_response(
         query_chain.stream(query_params)
     )
     return response_generator
 
-def metadata_display(md):
+def write_ref_doc(doc):
     # Don't include "text" field if it exists in the metadata
+    md = doc.metadata
     md_no_key = {key: md[key] for key in md if key != "text"}
-    md_str = json.dumps(md_no_key, indent=4)
-    return md_str
+    st.markdown(f"- {md_no_key}")
 
 def write_context(documents):
-    metadata_list = "\n".join(
-        [f"""1. ```{metadata_display(doc.metadata)}``` """ for doc in documents]
-    )
     st.markdown(f"### References ({len(documents)})")
-    st.markdown(metadata_list)
+    for doc in documents:
+        write_ref_doc(doc)
 
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = create_chat_history()

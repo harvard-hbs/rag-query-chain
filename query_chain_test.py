@@ -31,7 +31,7 @@ def main():
     question = "How did he meet Elrond?"
     for resp_part in chain.stream({
             "question": question,
-            "chat_history": str(chat_history),
+            "chat_history": chat_history.messages,
     }):
         if "context" in resp_part:
             print("References:")
