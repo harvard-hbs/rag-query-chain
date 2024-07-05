@@ -74,16 +74,15 @@ def stream_model_query(question):
     )
     return response_generator
 
-def write_ref_doc(doc):
-    # Don't include "text" field if it exists in the metadata
-    md = doc.metadata
-    md_no_key = {key: md[key] for key in md if key != "text"}
-    st.markdown(f"- {md_no_key}")
+def context_doc_label(doc):
+    label = doc.metadata["label"]
+    return label
 
 def write_context(documents):
-    st.markdown(f"### References ({len(documents)})")
+    st.markdown(f"#### References ({len(documents)})")
     for doc in documents:
-        write_ref_doc(doc)
+        with st.expander(context_doc_label(doc)):
+            st.write(doc.page_content, unsafe_allow_html=True)
 
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = create_chat_history()
