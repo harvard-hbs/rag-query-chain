@@ -6,4 +6,4 @@ python-dotenv
 psycopg[binary]
 streamlit
 watchdog
-
+gradio
