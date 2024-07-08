@@ -4,6 +4,7 @@ from langchain.prompts import (
     MessagesPlaceholder,
     PromptTemplate,
 )
+from langchain_core.retrievers import RetrieverOutputLike
 from langchain_core.runnables import (
     ConfigurableField,
     RunnableBranch,
@@ -11,19 +12,19 @@ from langchain_core.runnables import (
     RunnableParallel,
     RunnablePassthrough,
 )
-from langchain_core.output_parsers import StrOutputParser
 from langchain_aws import BedrockEmbeddings
 from langchain_aws import ChatBedrock
 from langchain_aws import BedrockLLM
 from langchain_postgres import PGVector
 
-import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
+
 def conversational_retrieval_chain(
-        collection_name: str,
-        connection_string: str,
+    collection_name: str,
+    connection_string: str,
 ):
     # search_kwargs
     max_num_documents = 10
@@ -36,7 +37,7 @@ def conversational_retrieval_chain(
 
     # LLM to be used for reformulating question with history, if needed
     question_llm = BedrockLLM(
-        model_id =  "anthropic.claude-instant-v1",
+        model_id="anthropic.claude-instant-v1",
     )
 
     # Prompt for question reformulation with history
@@ -49,15 +50,21 @@ def conversational_retrieval_chain(
             "Follow Up Input: {question}\nStandalone question:"
         ),
     )
-    
+
     chat_history_stringifier = ChatPromptTemplate.from_messages(
         [MessagesPlaceholder("chat_history")]
     ) | RunnableLambda(lambda x: x.to_string())
-    
-    reformulate_chain = RunnableParallel({
-        "question": itemgetter("question"),
-        "chat_history": chat_history_stringifier,
-        }) | condense_question_prompt | question_llm
+
+    reformulate_chain = (
+        RunnableParallel(
+            {
+                "question": itemgetter("question"),
+                "chat_history": chat_history_stringifier,
+            }
+        )
+        | condense_question_prompt
+        | question_llm
+    )
 
     # Branch to reformulate question if there is non-empty chat history
     maybe_reformulate_with_history: RetrieverOutputLike = RunnableBranch(
@@ -72,9 +79,9 @@ def conversational_retrieval_chain(
     )
     # Vector database for retrieval of contextual documents
     db = PGVector(
-        collection_name = collection_name,
-        connection = connection_string,
-        embeddings = embeddings,
+        collection_name=collection_name,
+        connection=connection_string,
+        embeddings=embeddings,
     )
     retriever = db.as_retriever(
         search_type="similarity_score_threshold",
@@ -110,7 +117,7 @@ def conversational_retrieval_chain(
 
     # LLM for answering with context
     model = ChatBedrock(
-        model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0",
+        model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
     )
 
     # Format the context documents into a string for use
@@ -121,7 +128,7 @@ def conversational_retrieval_chain(
             "question": itemgetter("question"),
         }
     )
-    
+
     chain = (
         # Required "question" string and optional "chat_history" string
         maybe_reformulate_with_history
@@ -145,7 +152,7 @@ def no_chat_history(runnable):
     no_history = (not chat_history) or (len(str(chat_history)) == 0)
     return no_history
 
-        
+
 def format_docs(docs):
     """Turn list of documents into newline-separated string"""
     context_str = "\n\n".join(doc.page_content for doc in docs)

@@ -1,5 +1,4 @@
 from langchain_core.chat_history import InMemoryChatMessageHistory
-from langchain_core.messages import AIMessage
 import gradio as gr
 import os
 

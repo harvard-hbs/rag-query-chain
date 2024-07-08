@@ -6,14 +6,15 @@ import os
 from pprint import pprint
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-    
+
 def main():
     chat_history = InMemoryChatMessageHistory()
     chain = conversational_retrieval_chain(
-        collection_name = os.getenv("COLLECTION_NAME"),
-        connection_string = os.getenv("CONNECTION_STRING"),
+        collection_name=os.getenv("COLLECTION_NAME"),
+        connection_string=os.getenv("CONNECTION_STRING"),
     )
 
     print("Without streaming...")
@@ -29,21 +30,22 @@ def main():
 
     print("With streaming...")
     question = "How did he meet Elrond?"
-    for resp_part in chain.stream({
+    for resp_part in chain.stream(
+        {
             "question": question,
             "chat_history": chat_history.messages,
-    }):
+        }
+    ):
         if "context" in resp_part:
             print("References:")
             for doc in resp_part["context"]:
                 pprint(doc.metadata)
         else:
-            assert("answer" in resp_part)
+            assert "answer" in resp_part
             print(resp_part["answer"].content, end="")
     print()
     print("Done.")
-    
-        
+
+
 if __name__ == "__main__":
     main()
-       

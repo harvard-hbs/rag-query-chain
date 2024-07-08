@@ -1,6 +1,5 @@
 import os
 
-import json
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.messages import AIMessage
 import streamlit as st
@@ -75,13 +74,18 @@ def stream_model_query(question):
     return response_generator
 
 def context_doc_label(doc):
-    label = doc.metadata["label"]
+    md = doc.metadata
+    if "volume" in md:
+        label = f"{md['volume']} - {md['label']}"
+    else:
+        label = md["label"]
     return label
 
 def write_context(documents):
-    st.markdown(f"#### References ({len(documents)})")
-    for doc in documents:
-        with st.expander(context_doc_label(doc)):
+    with st.expander(f"References ({len(documents)})"):
+        for doc in documents:
+            label = context_doc_label(doc)
+            st.write(f"- {label}")
             st.write(doc.page_content, unsafe_allow_html=True)
 
 if "chat_history" not in st.session_state:
